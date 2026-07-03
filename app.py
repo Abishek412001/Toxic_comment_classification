@@ -4,7 +4,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import numpy as np
 
 LABEL_COLS = ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"]
-SAVE_DIR   = "./toxic_bert_model"
+SAVE_DIR = "microsoft/deberta-v3-base"
 MAX_LEN    = 128
 
 @st.cache_resource
