@@ -19,7 +19,7 @@ def load_assets():
         
     # --- HANDLES LARGE WEIGHTS FILE ---
     # TODO: Upload your 'model.safetensors' to a cloud link and paste the direct download URL below:
-    WEIGHTS_URL = "https://your-cloud-storage-provider.com/model.safetensors"
+    WEIGHTS_URL = https://huggingface.co/abishekw412001/toxic-deberta-v5/resolve/main/best_checkpoint.pt?download=true
     local_weights_path = os.path.join(LOCAL_MODEL_DIR, "model.safetensors")
     
     if not os.path.exists(local_weights_path) and "your-cloud-storage" not in WEIGHTS_URL:
