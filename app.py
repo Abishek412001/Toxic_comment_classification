@@ -1,6 +1,13 @@
-import streamlit as st, torch, json, re, os, urllib.request
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+"""
+Toxic Comment Classifier — Streamlit App
+"""
+import os
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"   # suppress vision-module scan noise
+os.environ["TOKENIZERS_PARALLELISM"] = "false"   # suppress tokenizer fork warning
+
+import streamlit as st, torch, json, re, urllib.request
 import numpy as np
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 # --- 1. MUST BE THE ABSOLUTE FIRST STREAMLIT COMMAND ---
 st.set_page_config(page_title="Toxic Classifier", page_icon="🛡️")
@@ -10,6 +17,7 @@ LABEL_COLS = ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_
 MAX_LEN    = 128
 LOCAL_MODEL_DIR = "./toxic_bert_model"
 BASE_MODEL = "microsoft/deberta-v3-base"
+MIN_THRESHOLD_FLOOR = 0.55
 
 # --- 3. ASSET CACHING LAYER ---
 @st.cache_resource
@@ -57,60 +65,77 @@ def load_assets():
     threshold_path = "thresholds.json"
     if os.path.exists(threshold_path):
         with open(threshold_path, "r") as f:
-            thresholds = json.load(f)
+            raw = json.load(f)
     else:
-        thresholds = {name: 0.5 for name in LABEL_COLS}
-        thresholds["binary"] = 0.5
+        raw = {name: 0.5 for name in LABEL_COLS}
+        raw["binary"] = 0.5
         
-    return tokenizer, model, thresholds
+    thresh = {k: max(float(v), MIN_THRESHOLD_FLOOR) for k, v in raw.items()}
+    original_low = {k: float(v) for k, v in raw.items() if float(v) < MIN_THRESHOLD_FLOOR}
+        
+    return tokenizer, model, thresh, original_low
 
-tokenizer, model, thresholds = load_assets()
+tokenizer, model, thresholds, original_low = load_assets()
 
 # --- Text Cleaning Engine ---
-_URL = re.compile(r"https?://\S+|www\.\S+")
+_URL  = re.compile(r"https?://\S+|www\.\S+")
 _HTML = re.compile(r"<[^>]+>")
 
-def clean(t):
-    t = t.lower()
-    t = _URL.sub(" ", t)
-    t = _HTML.sub(" ", t)
-    return re.sub(r" {2,}", " ", t).strip()
+def clean(text):
+    return re.sub(r" {2,}", " ", _HTML.sub(" ", _URL.sub(" ", text.lower()))).strip()
 
 @torch.no_grad()
 def predict(text):
     cleaned = clean(text)
     enc = tokenizer(cleaned, return_tensors="pt", truncation=True, max_length=MAX_LEN).to("cpu")
     logits = model(**enc).logits[0]
-    probs = torch.sigmoid(logits).numpy()
+    probs = torch.sigmoid(logits.float()).numpy()
     bin_score = float(np.max(probs))
     return bin_score, {name: float(p) for name, p in zip(LABEL_COLS, probs)}
 
-# --- Streamlit Presentation Layer ---
+# ── UI ─────────────────────────────────────────────────────────────────────────
 st.title("🛡️ Toxic Comment Classifier")
 st.write("Enter a comment below to evaluate multi-label classification predictions.")
 
-user_input = st.text_area("Comment Content Evaluation Window", height=120, placeholder="Type your text here...")
+if original_low:
+    st.warning(
+        f"⚠️ Saved thresholds for **{', '.join(original_low)}** were below "
+        f"{MIN_THRESHOLD_FLOOR} ({', '.join(f'{v:.2f}' for v in original_low.values())}). "
+        f"Floor applied. Retrain on Jigsaw data for a permanent fix.",
+        icon="⚠️",
+    )
+
+st.markdown("**Comment Content Evaluation Window**")
+user_input = st.text_area("", height=130, placeholder="Type a comment here…",
+                           label_visibility="collapsed")
+
 if st.button("Analyse Text Content", type="primary") and user_input.strip():
     bin_score, label_probs = predict(user_input)
-    
-    binary_thresh = thresholds.get("binary", 0.5)
-    verdict = "TOXIC" if bin_score > binary_thresh else "NON-TOXIC"
-    
-    if verdict == "TOXIC":
-        st.error(f"### Verdict: {verdict} (Score: {bin_score:.3f})")
-    else:
-        st.success(f"### Verdict: {verdict} (Score: {bin_score:.3f})")
-        
-    st.markdown("---")
+    bin_thresh = thresholds.get("binary", MIN_THRESHOLD_FLOOR)
+    verdict    = "TOXIC" if bin_score > bin_thresh else "NON-TOXIC"
+    color      = "#5c0000" if verdict == "TOXIC" else "#003300"
+
+    st.markdown(
+        f'<div style="background:{color};padding:14px 18px;border-radius:8px;margin:12px 0">'
+        f'<b style="font-size:1.2rem">Verdict: {verdict}</b>'
+        f'<span style="float:right;opacity:.8">Score: {bin_score:.3f} / '
+        f'Threshold: {bin_thresh:.2f}</span></div>',
+        unsafe_allow_html=True,
+    )
+
+    st.divider()
     st.subheader("Sub-Category Probabilities Breakdown")
-    for name, p in label_probs.items():
-        tuned_t = thresholds.get(name, 0.5)
-        flagged = p > tuned_t
-        
-        col1, col2 = st.columns([1, 4])
-        with col1:
-            st.markdown(f"**{name.title()}**")
+
+    for name, prob in label_probs.items():
+        thresh  = thresholds.get(name, MIN_THRESHOLD_FLOOR)
+        flagged = prob > thresh
+        c1, c2  = st.columns([1, 3])
+        with c1:
+            st.markdown(f"**{name.replace('_',' ').title()}**")
             st.caption("⚠️ Flagged" if flagged else "✅ Safe")
-        with col2:
-            st.progress(p)
-            st.caption(f"Score: {p:.3f} / Threshold: {tuned_t:.2f}")
+        with c2:
+            st.progress(min(prob, 1.0))
+            st.caption(f"Score: {prob:.3f} / Threshold: {thresh:.2f}")
+
+    with st.expander("🔍 Cleaned input sent to model"):
+        st.code(clean(user_input))
