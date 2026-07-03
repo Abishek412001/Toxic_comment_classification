@@ -2,25 +2,23 @@ import streamlit as st, torch, json, re, os, urllib.request
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import numpy as np
 
+# --- 1. MUST BE THE ABSOLUTE FIRST STREAMLIT COMMAND ---
+st.set_page_config(page_title="Toxic Classifier", page_icon="🛡️")
+
+# --- 2. CONFIGURATIONS & CONSTANTS ---
 LABEL_COLS = ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"]
 MAX_LEN    = 128
-
-# Define where you want to keep the model files locally on the server
 LOCAL_MODEL_DIR = "./toxic_bert_model"
-# Setting the base architecture configuration framework
 BASE_MODEL = "microsoft/deberta-v3-base"
 
 @st.cache_resource
 def load_assets():
     """Downloads fine-tuned weights dynamically if missing, then loads all assets."""
-    # Create local folder if it doesn't exist
     if not os.path.exists(LOCAL_MODEL_DIR):
         os.makedirs(LOCAL_MODEL_DIR, exist_ok=True)
         
     # --- HANDLES LARGE WEIGHTS FILE ---
-    # TODO: Upload your 'model.safetensors' or 'best_checkpoint.pt' to a cloud link 
-    # (like Google Drive, AWS S3, Dropbox, or a public Hugging Face repository)
-    # Then paste the direct download URL below:
+    # TODO: Upload your 'model.safetensors' to a cloud link and paste the direct download URL below:
     WEIGHTS_URL = "https://your-cloud-storage-provider.com/model.safetensors"
     local_weights_path = os.path.join(LOCAL_MODEL_DIR, "model.safetensors")
     
@@ -29,7 +27,6 @@ def load_assets():
             urllib.request.urlretrieve(WEIGHTS_URL, local_weights_path)
 
     # --- LOADING ALL MODEL COMPONENT GRAPH ARTIFACTS ---
-    # Fallback to base tokenizer layout if local config files aren't found yet
     try:
         tokenizer = AutoTokenizer.from_pretrained(LOCAL_MODEL_DIR)
     except Exception:
@@ -38,12 +35,10 @@ def load_assets():
     try:
         model = AutoModelForSequenceClassification.from_pretrained(LOCAL_MODEL_DIR).to("cpu")
     except Exception:
-        # If cloud downloads aren't configured yet, load base architecture safely
         model = AutoModelForSequenceClassification.from_pretrained(BASE_MODEL, num_labels=6).to("cpu")
         
     model.eval()
     
-    # Load calibrated decision boundary settings 
     threshold_path = "thresholds.json"
     if os.path.exists(threshold_path):
         with open(threshold_path, "r") as f:
@@ -76,7 +71,6 @@ def predict(text):
     return bin_score, {name: float(p) for name, p in zip(LABEL_COLS, probs)}
 
 # --- Streamlit Presentation Layer ---
-st.set_page_config(page_title="Toxic Classifier", page_icon="🛡️")
 st.title("🛡️ Toxic Comment Classifier")
 st.write("Enter a comment below to evaluate multi-label classification predictions.")
 
