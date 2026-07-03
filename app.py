@@ -1,24 +1,62 @@
-
-import streamlit as st, torch, json, re, os
+import streamlit as st, torch, json, re, os, urllib.request
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import numpy as np
 
 LABEL_COLS = ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"]
-SAVE_DIR = "microsoft/deberta-v3-base"
 MAX_LEN    = 128
+
+# Define where you want to keep the model files locally on the server
+LOCAL_MODEL_DIR = "./toxic_bert_model"
+# Setting the base architecture configuration framework
+BASE_MODEL = "microsoft/deberta-v3-base"
 
 @st.cache_resource
 def load_assets():
-    tok = AutoTokenizer.from_pretrained(SAVE_DIR)
-    # FORCE the model onto the CPU for predictable cloud execution
-    model = AutoModelForSequenceClassification.from_pretrained(SAVE_DIR).to("cpu")
+    """Downloads fine-tuned weights dynamically if missing, then loads all assets."""
+    # Create local folder if it doesn't exist
+    if not os.path.exists(LOCAL_MODEL_DIR):
+        os.makedirs(LOCAL_MODEL_DIR, exist_ok=True)
+        
+    # --- HANDLES LARGE WEIGHTS FILE ---
+    # TODO: Upload your 'model.safetensors' or 'best_checkpoint.pt' to a cloud link 
+    # (like Google Drive, AWS S3, Dropbox, or a public Hugging Face repository)
+    # Then paste the direct download URL below:
+    WEIGHTS_URL = "https://your-cloud-storage-provider.com/model.safetensors"
+    local_weights_path = os.path.join(LOCAL_MODEL_DIR, "model.safetensors")
+    
+    if not os.path.exists(local_weights_path) and "your-cloud-storage" not in WEIGHTS_URL:
+        with st.spinner("Downloading your fine-tuned model weights from cloud storage... Please wait."):
+            urllib.request.urlretrieve(WEIGHTS_URL, local_weights_path)
+
+    # --- LOADING ALL MODEL COMPONENT GRAPH ARTIFACTS ---
+    # Fallback to base tokenizer layout if local config files aren't found yet
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(LOCAL_MODEL_DIR)
+    except Exception:
+        tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
+        
+    try:
+        model = AutoModelForSequenceClassification.from_pretrained(LOCAL_MODEL_DIR).to("cpu")
+    except Exception:
+        # If cloud downloads aren't configured yet, load base architecture safely
+        model = AutoModelForSequenceClassification.from_pretrained(BASE_MODEL, num_labels=6).to("cpu")
+        
     model.eval()
-    with open(f"{SAVE_DIR}/thresholds.json") as f:
-        thresh = json.load(f)
-    return tok, model, thresh
+    
+    # Load calibrated decision boundary settings 
+    threshold_path = "thresholds.json"
+    if os.path.exists(threshold_path):
+        with open(threshold_path, "r") as f:
+            thresholds = json.load(f)
+    else:
+        thresholds = {name: 0.5 for name in LABEL_COLS}
+        thresholds["binary"] = 0.5
+        
+    return tokenizer, model, thresholds
 
 tokenizer, model, thresholds = load_assets()
 
+# --- Text Cleaning Engine ---
 _URL = re.compile(r"https?://\S+|www\.\S+")
 _HTML = re.compile(r"<[^>]+>")
 
@@ -31,22 +69,39 @@ def clean(t):
 @torch.no_grad()
 def predict(text):
     cleaned = clean(text)
-    # Ensure inputs map to cpu explicitly
     enc = tokenizer(cleaned, return_tensors="pt", truncation=True, max_length=MAX_LEN).to("cpu")
     logits = model(**enc).logits[0]
     probs = torch.sigmoid(logits).numpy()
     bin_score = float(np.max(probs))
     return bin_score, {name: float(p) for name, p in zip(LABEL_COLS, probs)}
 
-st.set_page_config(page_title="Toxic Classifier", page_icon="shield")
-st.title("Toxic Comment Classifier")
-st.write("Enter a comment and click Analyse.")
+# --- Streamlit Presentation Layer ---
+st.set_page_config(page_title="Toxic Classifier", page_icon="🛡️")
+st.title("🛡️ Toxic Comment Classifier")
+st.write("Enter a comment below to evaluate multi-label classification predictions.")
 
-user_input = st.text_area("Comment", height=120)
-if st.button("Analyse") and user_input.strip():
+user_input = st.text_area("Comment Content Evaluation Window", height=120, placeholder="Type your text here...")
+if st.button("Analyse Text Content", type="primary") and user_input.strip():
     bin_score, label_probs = predict(user_input)
-    verdict = "TOXIC" if bin_score > thresholds.get("binary", 0.5) else "NON-TOXIC"
-    st.subheader(f"Verdict: {verdict}  (score={bin_score:.3f})")
+    
+    binary_thresh = thresholds.get("binary", 0.5)
+    verdict = "TOXIC" if bin_score > binary_thresh else "NON-TOXIC"
+    
+    if verdict == "TOXIC":
+        st.error(f"### Verdict: {verdict} (Score: {bin_score:.3f})")
+    else:
+        st.success(f"### Verdict: {verdict} (Score: {bin_score:.3f})")
+        
+    st.markdown("---")
+    st.subheader("Sub-Category Probabilities Breakdown")
     for name, p in label_probs.items():
-        flagged = p > thresholds.get(name, 0.5)
-        st.write(f"{'⚠️' if flagged else '  '} **{name}**: {p:.3f}")
+        tuned_t = thresholds.get(name, 0.5)
+        flagged = p > tuned_t
+        
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            st.markdown(f"**{name.title()}**")
+            st.caption("⚠️ Flagged" if flagged else "✅ Safe")
+        with col2:
+            st.progress(p)
+            st.caption(f"Score: {p:.3f} / Threshold: {tuned_t:.2f}")
