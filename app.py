@@ -27,7 +27,7 @@ def load_assets():
         os.makedirs(LOCAL_MODEL_DIR, exist_ok=True)
         
     # --- DOWNLOAD THE WEIGHTS ---
-    WEIGHTS_URL = "https://huggingface.co/abishekw412001/toxic-deberta-v5/resolve/main/best_checkpoint.pt?download=true"
+    https://huggingface.co/abishekw412001/toxic-deberta-v5/resolve/main/best_checkpoint.pt?download=true
     local_weights_path = os.path.join(LOCAL_MODEL_DIR, "best_checkpoint.pt")
     
     if not os.path.exists(local_weights_path):
