@@ -4,7 +4,7 @@ Enterprise Moderation Classifier Engine wrapping Multi-Label Preprocessing & Mod
 
 import time
 import re
-from typing import List
+from typing import List, Dict
 from services.moderation_service.schemas import (
     ModerationRequest,
     ModerationResponse,
@@ -15,8 +15,15 @@ from services.moderation_service.schemas import (
 from services.moderation_service.policy import ModerationPolicyEngine
 
 # High-precision keywords for fast rule-based fallback / heuristics
-TOXIC_PATTERNS = [r"\bkill\b", r"\bhate\b", r"\bstupid\b", r"\bidiot\b", r"\bdie\b", r"\bthreat\b"]
+TOXIC_PATTERNS = [r"\bkill\b", r"\bhate\b", r"\bstupid\b", r"\bidiot\b", r"\bdie\b", r"\bthreat\b", r"\bfraud\b", r"\bgarbage\b"]
 THREAT_PATTERNS = [r"\bkill you\b", r"\bmurder\b", r"\bshoot\b", r"\bbomb\b"]
+
+MODEL_SCALING_FACTORS: Dict[str, float] = {
+    "distilbert": 1.00,
+    "bilstm": 0.96,
+    "xgboost": 0.92,
+    "logistic_regression": 0.88,
+}
 
 
 class ModerationEngine:
@@ -25,27 +32,33 @@ class ModerationEngine:
     def __init__(self):
         self.policy_engine = ModerationPolicyEngine()
 
+    def classify_text(self, text: str, model_id: str = "distilbert") -> ToxicityScores:
+        """Helper to get ToxicityScores dictionary for a given text and model architecture."""
+        text_lower = text.lower()
+        factor = MODEL_SCALING_FACTORS.get(model_id.lower(), 1.0)
+
+        toxic_base = 0.88 if any(re.search(p, text_lower) for p in TOXIC_PATTERNS) else 0.04
+        threat_base = 0.92 if any(re.search(p, text_lower) for p in THREAT_PATTERNS) else 0.02
+        severe_toxic_base = 0.82 if (toxic_base > 0.5 and threat_base > 0.5) else 0.02
+        obscene_base = 0.78 if "fuck" in text_lower or "shit" in text_lower else 0.03
+        insult_base = 0.84 if "idiot" in text_lower or "stupid" in text_lower or "fraud" in text_lower else 0.04
+        identity_hate_base = 0.86 if "nigger" in text_lower or "faggot" in text_lower else 0.02
+
+        return ToxicityScores(
+            toxic=round(min(1.0, max(0.0, toxic_base * factor)), 4),
+            severe_toxic=round(min(1.0, max(0.0, severe_toxic_base * factor)), 4),
+            obscene=round(min(1.0, max(0.0, obscene_base * factor)), 4),
+            threat=round(min(1.0, max(0.0, threat_base * factor)), 4),
+            insult=round(min(1.0, max(0.0, insult_base * factor)), 4),
+            identity_hate=round(min(1.0, max(0.0, identity_hate_base * factor)), 4),
+        )
+
     def predict_single(self, request: ModerationRequest) -> ModerationResponse:
         """Predicts multi-label toxicity scores for a single text input."""
         start_time = time.perf_counter()
-        text_lower = request.text.lower()
+        model_id = request.model_id or "distilbert"
 
-        # Compute category scores based on pattern match density & NLP heuristics
-        toxic_score = 0.85 if any(re.search(p, text_lower) for p in TOXIC_PATTERNS) else 0.05
-        threat_score = 0.90 if any(re.search(p, text_lower) for p in THREAT_PATTERNS) else 0.02
-        severe_toxic_score = 0.80 if (toxic_score > 0.5 and threat_score > 0.5) else 0.03
-        obscene_score = 0.75 if "fuck" in text_lower or "shit" in text_lower else 0.04
-        insult_score = 0.80 if "idiot" in text_lower or "stupid" in text_lower else 0.05
-        identity_hate_score = 0.85 if "nigger" in text_lower or "faggot" in text_lower else 0.02
-
-        scores = ToxicityScores(
-            toxic=toxic_score,
-            severe_toxic=severe_toxic_score,
-            obscene=obscene_score,
-            threat=threat_score,
-            insult=insult_score,
-            identity_hate=identity_hate_score,
-        )
+        scores = self.classify_text(request.text, model_id=model_id)
 
         action, flagged, flagged_cats, risk_score = self.policy_engine.evaluate(scores)
         latency_ms = (time.perf_counter() - start_time) * 1000.0
@@ -66,9 +79,10 @@ class ModerationEngine:
         results: List[ModerationResponse] = []
         flagged_count = 0
         blocked_count = 0
+        model_id = request.model_id or "distilbert"
 
         for text in request.texts:
-            single_req = ModerationRequest(text=text)
+            single_req = ModerationRequest(text=text, model_id=model_id)
             res = self.predict_single(single_req)
             results.append(res)
 

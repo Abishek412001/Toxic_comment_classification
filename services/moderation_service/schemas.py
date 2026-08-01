@@ -25,6 +25,7 @@ class ToxicityScores(BaseSchema):
 
 class ModerationRequest(BaseSchema):
     text: str = Field(min_length=1, max_length=10000, description="Text string to evaluate")
+    model_id: Optional[str] = Field(default="distilbert", description="Model architecture identifier")
     metadata: Optional[Dict[str, Any]] = None
 
 
@@ -40,6 +41,7 @@ class ModerationResponse(BaseSchema):
 
 class BatchModerationRequest(BaseSchema):
     texts: List[str] = Field(min_items=1, max_items=500, description="List of text strings for bulk evaluation")
+    model_id: Optional[str] = Field(default="distilbert", description="Model architecture identifier")
 
 
 class BatchModerationResponse(BaseSchema):

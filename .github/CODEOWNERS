@@ -1,0 +1,5 @@
+# OpenTrust AI Codeowners
+*       @Abishek412001
+/services/ @Abishek412001
+/src/ @Abishek412001
+/.github/workflows/ @Abishek412001
