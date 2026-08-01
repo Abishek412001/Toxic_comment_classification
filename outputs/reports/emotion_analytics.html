@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Emotion Analytics Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; margin: 0; padding: 30px; }
+        .header { margin-bottom: 25px; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .grid { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 30px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 style="color: #2c3e50; margin: 0;">Emotion Analytics Dashboard</h1>
+        <p style="color: #7f8c8d; margin-top: 5px;">Toxic Comment Classification, Sentiment Analysis & Emotion Mining System</p>
+    </div>
+    <div class="grid">
+        
+            <div style="background: #ffffff; border: 1px solid #e1e8ed; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); min-width: 200px; flex: 1;">
+                <p style="color: #7f8c8d; font-size: 0.85em; font-weight: bold; margin: 0; text-transform: uppercase;">Primary Emotion</p>
+                <h2 style="color: #2c3e50; margin: 8px 0 0 0; font-size: 1.6em;">Neutral (35.3%)</h2>
+            </div>
+            
+            <div style="background: #ffffff; border: 1px solid #e1e8ed; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); min-width: 200px; flex: 1;">
+                <p style="color: #7f8c8d; font-size: 0.85em; font-weight: bold; margin: 0; text-transform: uppercase;">Top Toxic Emotion</p>
+                <h2 style="color: #2c3e50; margin: 8px 0 0 0; font-size: 1.6em;">Anger (20.0%)</h2>
+            </div>
+            
+            <div style="background: #ffffff; border: 1px solid #e1e8ed; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); min-width: 200px; flex: 1;">
+                <p style="color: #7f8c8d; font-size: 0.85em; font-weight: bold; margin: 0; text-transform: uppercase;">Highest Toxicity Correlation</p>
+                <h2 style="color: #2c3e50; margin: 8px 0 0 0; font-size: 1.6em;">Disgust & Obscene (82%)</h2>
+            </div>
+            
+            <div style="background: #ffffff; border: 1px solid #e1e8ed; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); min-width: 200px; flex: 1;">
+                <p style="color: #7f8c8d; font-size: 0.85em; font-weight: bold; margin: 0; text-transform: uppercase;">Champion Emotion Model</p>
+                <h2 style="color: #2c3e50; margin: 8px 0 0 0; font-size: 1.6em;">DistilRoBERTa (0.900 F1)</h2>
+            </div>
+            
+    </div>
+</body>
+</html>

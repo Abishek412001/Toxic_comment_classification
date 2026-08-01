@@ -1,0 +1,30 @@
+# Multi-Environment MLOps Configuration Matrix
+environment: development
+
+development:
+  debug: true
+  log_level: DEBUG
+  api_port: 8000
+  model_dir: models/
+  cache_size: 128
+
+testing:
+  debug: true
+  log_level: INFO
+  api_port: 8001
+  model_dir: tests/mocks/
+  cache_size: 16
+
+staging:
+  debug: false
+  log_level: INFO
+  api_port: 8080
+  model_dir: models/
+  cache_size: 512
+
+production:
+  debug: false
+  log_level: WARNING
+  api_port: 8080
+  model_dir: models/
+  cache_size: 1024

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LIME Local Feature Attribution Explanation</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .card { border: 1px solid #ccc; padding: 20px; border-radius: 8px; background: #f9f9f9; }
+        h2 { color: #2c3e50; }
+        .pos { color: #d9534f; fontweight: bold; }
+        .neg { color: #5cb85c; fontweight: bold; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>LIME Interactive Feature Attribution Report</h2>
+        <p><strong>Input Comment Text:</strong></p>
+        <p style="font-size: 1.1em; background: #fff; padding: 15px; border-left: 4px solid #3498db;"><span style="background-color: #ffadad; padding: 2px; border-radius: 3px; font-weight: bold;">You</span> <span style="background-color: #ffadad; padding: 2px; border-radius: 3px; font-weight: bold;">are</span> <span style="background-color: #ffadad; padding: 2px; border-radius: 3px; font-weight: bold;">an</span> <span style="background-color: #ffadad; padding: 2px; border-radius: 3px; font-weight: bold;">idiot</span> <span style="background-color: #ffadad; padding: 2px; border-radius: 3px; font-weight: bold;">and</span> <span style="background-color: #ffadad; padding: 2px; border-radius: 3px; font-weight: bold;">a</span> <span style="background-color: #ffadad; padding: 2px; border-radius: 3px; font-weight: bold;">fool</span></p>
+        <hr>
+        <h3>Top Positive Contributors (Increases Toxicity Risk)</h3>
+        <ul>
+            <li><span class="pos">idiot</span>: +0.6100</li><li><span class="pos">fool</span>: +0.2800</li><li><span class="pos">You</span>: +0.0100</li><li><span class="pos">are</span>: +0.0100</li><li><span class="pos">an</span>: +0.0100</li><li><span class="pos">and</span>: +0.0100</li><li><span class="pos">a</span>: +0.0100</li>
+        </ul>
+        <h3>Top Negative Contributors (Decreases Toxicity Risk)</h3>
+        <ul>
+            
+        </ul>
+    </div>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Model Performance Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; margin: 0; padding: 30px; }
+        .header { margin-bottom: 25px; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .grid { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 30px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 style="color: #2c3e50; margin: 0;">Model Performance Dashboard</h1>
+        <p style="color: #7f8c8d; margin-top: 5px;">Toxic Comment Classification, Sentiment Analysis & Emotion Mining System</p>
+    </div>
+    <div class="grid">
+        
+            <div style="background: #ffffff; border: 1px solid #e1e8ed; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); min-width: 200px; flex: 1;">
+                <p style="color: #7f8c8d; font-size: 0.85em; font-weight: bold; margin: 0; text-transform: uppercase;">Champion Overall Model</p>
+                <h2 style="color: #2c3e50; margin: 8px 0 0 0; font-size: 1.6em;">RoBERTa (0.931 F1)</h2>
+            </div>
+            
+            <div style="background: #ffffff; border: 1px solid #e1e8ed; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); min-width: 200px; flex: 1;">
+                <p style="color: #7f8c8d; font-size: 0.85em; font-weight: bold; margin: 0; text-transform: uppercase;">Best Production Transformer</p>
+                <h2 style="color: #2c3e50; margin: 8px 0 0 0; font-size: 1.6em;">DistilBERT (0.925 F1 / 18ms)</h2>
+            </div>
+            
+            <div style="background: #ffffff; border: 1px solid #e1e8ed; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); min-width: 200px; flex: 1;">
+                <p style="color: #7f8c8d; font-size: 0.85em; font-weight: bold; margin: 0; text-transform: uppercase;">Best Traditional ML Model</p>
+                <h2 style="color: #2c3e50; margin: 8px 0 0 0; font-size: 1.6em;">XGBoost (0.842 F1 / 1.2ms)</h2>
+            </div>
+            
+            <div style="background: #ffffff; border: 1px solid #e1e8ed; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); min-width: 200px; flex: 1;">
+                <p style="color: #7f8c8d; font-size: 0.85em; font-weight: bold; margin: 0; text-transform: uppercase;">Fastest CPU Model</p>
+                <h2 style="color: #2c3e50; margin: 8px 0 0 0; font-size: 1.6em;">Logistic Regression (0.45 ms)</h2>
+            </div>
+            
+    </div>
+</body>
+</html>
