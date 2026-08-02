@@ -11,6 +11,16 @@
 
 ---
 
+# 🚀 OpenTrust AI
+
+Enterprise AI Content Moderation Platform
+
+### 🌐 Live Demo
+
+https://toxiccommentclassification-rmtl389tpzbgx3mcgwjfca.streamlit.app/
+
+---
+
 ## 📋 Table of Contents
 - [Executive Overview](#-executive-overview)
 - [System Architecture](#-system-architecture)
